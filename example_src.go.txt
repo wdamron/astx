@@ -1,0 +1,13 @@
+// +build ignore
+package astx
+
+import (
+	// very useful
+	fmt "fmt" // short for format
+)
+
+// Point is a type of thing
+type Point struct {
+	X int `tagz:"hello"`
+	Y int `tagz:"world"`
+}
