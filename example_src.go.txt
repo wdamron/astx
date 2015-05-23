@@ -9,5 +9,5 @@ import (
 // Point is a type of thing
 type Point struct {
 	X int `tagz:"hello"`
-	Y int `tagz:"world"`
+	Y *int `tagz:"world"`
 }
