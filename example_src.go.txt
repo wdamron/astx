@@ -6,10 +6,12 @@ import (
 	fmt "fmt" // short for format
 )
 
+const SZ = 2
+
 // Point is a type of thing
 type Point struct {
 	X  int    `tagz:"hello"`
 	Y  *int   `tagz:"world"`
-	Z  []int  `tagz:"hello"`
-	ZZ []*int `tagz:"world"`
+	Z  [2]*int  `tagz:"hello"`
+	ZZ map[string]*[2]int `tagz:"world"`
 }

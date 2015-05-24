@@ -88,7 +88,7 @@ func TestParseFile(t *testing.T) {
 		t.Logf("bad field: %#v", s.Fields[2])
 		t.Error("should parse names of fields in struct type defined in example.go.txt")
 	}
-	if s.Fields[2].Type != "[]int" {
+	if s.Fields[2].Type != "[2]*int" {
 		t.Logf("bad field: %#v", s.Fields[2])
 		t.Error("should parse types of fields in struct type defined in example.go.txt")
 	}
@@ -100,7 +100,7 @@ func TestParseFile(t *testing.T) {
 		t.Logf("bad field: %#v", s.Fields[3])
 		t.Error("should parse names of fields in struct type defined in example.go.txt")
 	}
-	if s.Fields[3].Type != "[]*int" {
+	if s.Fields[3].Type != "map[string]*[2]int" {
 		t.Logf("bad field: %#v", s.Fields[3])
 		t.Error("should parse types of fields in struct type defined in example.go.txt")
 	}

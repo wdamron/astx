@@ -60,21 +60,8 @@ func ParseFileStructs(fset *token.FileSet, f *ast.File) []Struct {
 				parsedStruct.Fields = make([]StructField, 0, len(structType.Fields.List))
 			}
 			for _, field := range structType.Fields.List {
-				var fieldType string
-				if tname, ok := field.Type.(*ast.Ident); ok {
-					fieldType = tname.Name
-				} else if tname, ok := field.Type.(*ast.StarExpr); ok {
-					fieldType = "*" + tname.X.(*ast.Ident).Name
-				} else if tname, ok := field.Type.(*ast.ArrayType); ok {
-					fieldType = "[]"
-					if eltType, ok := tname.Elt.(*ast.Ident); ok {
-						fieldType += eltType.Name
-					} else if eltType, ok := tname.Elt.(*ast.StarExpr); ok {
-						fieldType += "*" + eltType.X.(*ast.Ident).Name
-					} else {
-						continue
-					}
-				} else {
+				fieldType := formatTypeExpr(field.Type)
+				if fieldType == "" {
 					continue
 				}
 				parsedField := StructField{
@@ -97,4 +84,27 @@ func ParseFileStructs(fset *token.FileSet, f *ast.File) []Struct {
 	}
 
 	return parsedStructs
+}
+
+func formatTypeExpr(expr ast.Expr) string {
+	switch V := expr.(type) {
+	case *ast.Ident:
+		return V.Name
+	case *ast.StarExpr:
+		return "*" + formatTypeExpr(V.X)
+	case *ast.ArrayType:
+		sz := ""
+		if V.Len != nil {
+			switch L := V.Len.(type) {
+			case *ast.BasicLit:
+				sz = L.Value
+			case *ast.Ident:
+				sz = L.Name
+			}
+		}
+		return "[" + sz + "]" + formatTypeExpr(V.Elt)
+	case *ast.MapType:
+		return "map[" + formatTypeExpr(V.Key) + "]" + formatTypeExpr(V.Value)
+	}
+	return ""
 }
