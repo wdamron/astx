@@ -65,6 +65,17 @@ func ParseFileStructs(fset *token.FileSet, f *ast.File) []Struct {
 					fieldType = tname.Name
 				} else if tname, ok := field.Type.(*ast.StarExpr); ok {
 					fieldType = "*" + tname.X.(*ast.Ident).Name
+				} else if tname, ok := field.Type.(*ast.ArrayType); ok {
+					fieldType = "[]"
+					if eltType, ok := tname.Elt.(*ast.Ident); ok {
+						fieldType += eltType.Name
+					} else if eltType, ok := tname.Elt.(*ast.StarExpr); ok {
+						fieldType += "*" + eltType.X.(*ast.Ident).Name
+					} else {
+						continue
+					}
+				} else {
+					continue
 				}
 				parsedField := StructField{
 					Name: field.Names[0].Name,

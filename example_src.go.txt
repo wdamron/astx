@@ -8,6 +8,8 @@ import (
 
 // Point is a type of thing
 type Point struct {
-	X int `tagz:"hello"`
-	Y *int `tagz:"world"`
+	X  int    `tagz:"hello"`
+	Y  *int   `tagz:"world"`
+	Z  []int  `tagz:"hello"`
+	ZZ []*int `tagz:"world"`
 }
