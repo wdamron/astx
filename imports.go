@@ -28,17 +28,17 @@ func ParseFileImports(f *ast.File) []Import {
 			Name: name,
 			Path: path,
 		}
-		if spec.Doc.List != nil {
+		if spec.Doc != nil && spec.Doc.List != nil {
 			imp.Doc = make([]string, 0, len(spec.Doc.List))
+			for _, doc := range spec.Doc.List {
+				imp.Doc = append(imp.Doc, doc.Text)
+			}
 		}
-		for _, doc := range spec.Doc.List {
-			imp.Doc = append(imp.Doc, doc.Text)
-		}
-		if spec.Comment.List != nil {
+		if spec.Comment != nil && spec.Comment.List != nil {
 			imp.Comments = make([]string, 0, len(spec.Comment.List))
-		}
-		for _, comment := range spec.Comment.List {
-			imp.Comments = append(imp.Comments, comment.Text)
+			for _, comment := range spec.Comment.List {
+				imp.Comments = append(imp.Comments, comment.Text)
+			}
 		}
 		imports = append(imports, imp)
 	}

@@ -21,12 +21,15 @@ func TestParseFile(t *testing.T) {
 	if parsed.AbsPath == "" {
 		t.Error("should resolve (non-empty) absolute path of provided file path")
 	}
-	if len(parsed.Imports) != 1 {
+	if len(parsed.Imports) != 2 {
 		t.Error("should parse (1) import specified in example.go.txt")
 	} else {
 		imp := parsed.Imports[0]
 		if imp.Name != "fmt" {
 			t.Error("should parse 'fmt' import specified in example.go.txt")
+		}
+		if imp.Path != `"fmt"` {
+			t.Error("should parse path for 'fmt' import specified in example.go.txt")
 		}
 		if len(imp.Doc) != 1 {
 			t.Error("should parse (1) doc comment above 'fmt' import specified in example.go.txt")
@@ -41,6 +44,10 @@ func TestParseFile(t *testing.T) {
 			if imp.Comments[0] != "// short for format" {
 				t.Error("should parse full comment beside 'fmt' import specified in example.go.txt")
 			}
+		}
+		imp = parsed.Imports[1]
+		if imp.Path != `"io"` {
+			t.Error("should parse path for 'io' import specified in example.go.txt")
 		}
 	}
 	if len(parsed.Structs) != 1 {
@@ -58,7 +65,7 @@ func TestParseFile(t *testing.T) {
 		t.Error("should receive full contents of comment for struct type defined in example.go.txt")
 	}
 	if len(s.Fields) != 4 {
-		t.Error("should parse (2) fields for struct type defined in example.go.txt")
+		t.Error("should parse (4) fields for struct type defined in example.go.txt")
 	}
 	if s.Fields[0].Name != "X" {
 		t.Logf("bad field: %#v", s.Fields[0])
@@ -68,7 +75,7 @@ func TestParseFile(t *testing.T) {
 		t.Logf("bad field: %#v", s.Fields[0])
 		t.Error("should parse types of fields in struct type defined in example.go.txt")
 	}
-	if s.Fields[0].Tag != "`tagz:\"hello\"`" {
+	if s.Fields[0].Tag.Get("tagz") != "hello" {
 		t.Logf("bad field: %#v", s.Fields[0])
 		t.Error("should parse tags of fields in struct type defined in example.go.txt")
 	}
@@ -76,11 +83,11 @@ func TestParseFile(t *testing.T) {
 		t.Logf("bad field: %#v", s.Fields[1])
 		t.Error("should parse names of fields in struct type defined in example.go.txt")
 	}
-	if s.Fields[1].Type != "*int" {
+	if s.Fields[1].Type != "io.Reader" {
 		t.Logf("bad field: %#v", s.Fields[1])
 		t.Error("should parse types of fields in struct type defined in example.go.txt")
 	}
-	if s.Fields[1].Tag != "`tagz:\"world\"`" {
+	if s.Fields[1].Tag.Get("tagz") != "world" {
 		t.Logf("bad field: %#v", s.Fields[1])
 		t.Error("should parse tags of fields in struct type defined in example.go.txt")
 	}
@@ -92,7 +99,7 @@ func TestParseFile(t *testing.T) {
 		t.Logf("bad field: %#v", s.Fields[2])
 		t.Error("should parse types of fields in struct type defined in example.go.txt")
 	}
-	if s.Fields[2].Tag != "`tagz:\"hello\"`" {
+	if s.Fields[2].Tag.Get("tagz") != "hello" {
 		t.Logf("bad field: %#v", s.Fields[2])
 		t.Error("should parse tags of fields in struct type defined in example.go.txt")
 	}
@@ -100,11 +107,11 @@ func TestParseFile(t *testing.T) {
 		t.Logf("bad field: %#v", s.Fields[3])
 		t.Error("should parse names of fields in struct type defined in example.go.txt")
 	}
-	if s.Fields[3].Type != "map[string]*[2]int" {
+	if s.Fields[3].Type != "map[string]*[SZ]int" {
 		t.Logf("bad field: %#v", s.Fields[3])
 		t.Error("should parse types of fields in struct type defined in example.go.txt")
 	}
-	if s.Fields[3].Tag != "`tagz:\"world\"`" {
+	if s.Fields[3].Tag.Get("tagz") != "world" {
 		t.Logf("bad field: %#v", s.Fields[3])
 		t.Error("should parse tags of fields in struct type defined in example.go.txt")
 	}

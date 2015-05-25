@@ -4,14 +4,15 @@ package astx
 import (
 	// very useful
 	fmt "fmt" // short for format
+	"io"
 )
 
 const SZ = 2
 
 // Point is a type of thing
 type Point struct {
-	X  int    `tagz:"hello"`
-	Y  *int   `tagz:"world"`
-	Z  [2]*int  `tagz:"hello"`
-	ZZ map[string]*[2]int `tagz:"world"`
+	X  int                 `tagz:"hello"`
+	Y  io.Reader           `tagz:"world"`
+	Z  [2]*int             `tagz:"hello"`
+	ZZ map[string]*[SZ]int `tagz:"world"`
 }

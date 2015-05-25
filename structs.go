@@ -69,8 +69,12 @@ func ParseFileStructs(fset *token.FileSet, f *ast.File) []Struct {
 					Type: fieldType,
 				}
 				if field.Tag != nil {
-					parsedField.RawTag = field.Tag.Value
-					parsedField.Tag = reflect.StructTag(field.Tag.Value)
+					raw := field.Tag.Value
+					parsedField.RawTag = raw
+					if len(raw) >= 2 {
+						// Strip leading/trailing back-ticks:
+						parsedField.Tag = reflect.StructTag(raw[1 : len(raw)-1])
+					}
 				}
 				parsedStruct.Fields = append(parsedStruct.Fields, parsedField)
 			}
@@ -105,6 +109,8 @@ func formatTypeExpr(expr ast.Expr) string {
 		return "[" + sz + "]" + formatTypeExpr(V.Elt)
 	case *ast.MapType:
 		return "map[" + formatTypeExpr(V.Key) + "]" + formatTypeExpr(V.Value)
+	case *ast.SelectorExpr:
+		return formatTypeExpr(V.X) + "." + formatTypeExpr(V.Sel)
 	}
 	return ""
 }
