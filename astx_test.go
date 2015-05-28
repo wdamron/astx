@@ -51,7 +51,7 @@ func TestParseFile(t *testing.T) {
 		}
 	}
 	if len(parsed.Structs) != 1 {
-		t.Error("should parse (1) struct type defined in example.go.txt")
+		t.Fatal("should parse (1) struct type defined in example.go.txt")
 		return
 	}
 	s := parsed.Structs[0]
@@ -59,13 +59,13 @@ func TestParseFile(t *testing.T) {
 		t.Error("should parse name for struct type defined in example.go.txt")
 	}
 	if len(s.Comments) != 1 {
-		t.Error("should parse (1) comment for struct type defined in example.go.txt")
+		t.Fatal("should parse (1) comment for struct type defined in example.go.txt")
 	}
 	if s.Comments[0] != "// Point is a type of thing" {
 		t.Error("should receive full contents of comment for struct type defined in example.go.txt")
 	}
-	if len(s.Fields) != 4 {
-		t.Error("should parse (4) fields for struct type defined in example.go.txt")
+	if len(s.Fields) != 5 {
+		t.Fatal("should parse (5) fields for struct type defined in example.go.txt")
 	}
 	if s.Fields[0].Name != "X" {
 		t.Logf("bad field: %#v", s.Fields[0])
@@ -95,9 +95,9 @@ func TestParseFile(t *testing.T) {
 		t.Logf("bad field: %#v", s.Fields[2])
 		t.Error("should parse names of fields in struct type defined in example.go.txt")
 	}
-	if s.Fields[2].Type != "[2]*int" {
+	if s.Fields[2].Type != "[2]******int" {
 		t.Logf("bad field: %#v", s.Fields[2])
-		t.Error("should parse types of fields in struct type defined in example.go.txt")
+		t.Error("should parse types (with long pointer chains) of fields in struct type defined in example.go.txt")
 	}
 	if s.Fields[2].Tag.Get("tagz") != "hello" {
 		t.Logf("bad field: %#v", s.Fields[2])
@@ -114,5 +114,26 @@ func TestParseFile(t *testing.T) {
 	if s.Fields[3].Tag.Get("tagz") != "world" {
 		t.Logf("bad field: %#v", s.Fields[3])
 		t.Error("should parse tags of fields in struct type defined in example.go.txt")
+	}
+	if s.Fields[4].Type != "*struct{...}" {
+		t.Error("should include abbreviated type name for embedded struct type defined in example.go.txt")
+	}
+	if s.Fields[4].StructType == nil {
+		t.Fatal("should parse embedded struct type fields in struct type defined in example.go.txt")
+	}
+	if len(s.Fields[4].StructType.Fields) != 2 {
+		t.Fatal("should parse (2) fields in embedded struct type defined in example.go.txt")
+	}
+	if s.Fields[4].StructType.Fields[0].Name != "A, B" {
+		t.Error("should parse names of fields in embedded struct type defined in example.go.txt")
+	}
+	if s.Fields[4].StructType.Fields[0].Type != "string" {
+		t.Error("should parse types of fields in embedded struct type defined in example.go.txt")
+	}
+	if s.Fields[4].StructType.Fields[1].Name != "C" {
+		t.Error("should parse names of fields in embedded struct type defined in example.go.txt")
+	}
+	if s.Fields[4].StructType.Fields[1].Type != "string" {
+		t.Error("should parse types of fields in embedded struct type defined in example.go.txt")
 	}
 }
