@@ -1,12 +1,8 @@
 package astx
 
 import (
-	// "go/ast"
 	"strings"
 	"testing"
-
-	"golang.org/x/tools/go/loader"
-	// "golang.org/x/tools/go/types"
 )
 
 func TestParseFile(t *testing.T) {
