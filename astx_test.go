@@ -1,7 +1,12 @@
 package astx
 
 import (
+	// "go/ast"
+	"strings"
 	"testing"
+
+	"golang.org/x/tools/go/loader"
+	// "golang.org/x/tools/go/types"
 )
 
 func TestParseFile(t *testing.T) {
@@ -115,8 +120,8 @@ func TestParseFile(t *testing.T) {
 		t.Logf("bad field: %#v", s.Fields[3])
 		t.Error("should parse tags of fields in struct type defined in example.go.txt")
 	}
-	if s.Fields[4].Type != "*struct{...}" {
-		t.Error("should include abbreviated type name for embedded struct type defined in example.go.txt")
+	if !strings.HasPrefix(s.Fields[4].Type, "*struct {") {
+		t.Error("should include type name for embedded struct type defined in example.go.txt -- found:\n" + s.Fields[4].Type)
 	}
 	if s.Fields[4].StructType == nil {
 		t.Fatal("should parse embedded struct type fields in struct type defined in example.go.txt")
