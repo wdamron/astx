@@ -1,8 +1,10 @@
 package astx
 
 import (
+	"bytes"
 	"go/ast"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"path/filepath"
 	"reflect"
@@ -58,7 +60,7 @@ type StructField struct {
 	StructType *Struct
 }
 
-// ParseDirOptions parses all packages at path. All options will be set to their
+// ParseDir parses all packages at path. All options will be set to their
 // default values.
 func ParseDir(path string) (map[string]Package, error) {
 	return ParseDirOptions(path, OptParseImports|OptParseStructs)
@@ -86,7 +88,7 @@ func ParseDirOptions(path string, options int) (map[string]Package, error) {
 	return result, nil
 }
 
-// ParseFileOptions parses the file at path. All options will be set to their
+// ParseFile parses the file at path. All options will be set to their
 // default values.
 func ParseFile(path string) (*File, error) {
 	return ParseFileOptions(path, OptParseImports|OptParseStructs)
@@ -165,18 +167,8 @@ func parseFileImports(f *ast.File) []Import {
 			Name: name,
 			Path: path,
 		}
-		if spec.Doc != nil && spec.Doc.List != nil {
-			imp.Doc = make([]string, 0, len(spec.Doc.List))
-			for _, doc := range spec.Doc.List {
-				imp.Doc = append(imp.Doc, doc.Text)
-			}
-		}
-		if spec.Comment != nil && spec.Comment.List != nil {
-			imp.Comments = make([]string, 0, len(spec.Comment.List))
-			for _, comment := range spec.Comment.List {
-				imp.Comments = append(imp.Comments, comment.Text)
-			}
-		}
+		imp.Doc = parseComments(spec.Doc)
+		imp.Comments = parseComments(spec.Comment)
 		imports = append(imports, imp)
 	}
 	return imports
@@ -197,26 +189,21 @@ func parseFileStructs(fset *token.FileSet, f *ast.File) []Struct {
 			if !ok {
 				continue
 			}
-
 			structType, ok := typeSpec.Type.(*ast.StructType)
 			if !ok {
 				continue
 			}
 			structName := typeSpec.Name.Name
-			comments := []string{}
+			var comments []string
 			commentGroups := commentMap[genDecl]
 			if commentGroups != nil {
 				for _, group := range commentGroups {
-					for _, comment := range group.List {
-						comments = append(comments, comment.Text)
-					}
+					comments = append(comments, parseComments(group)...)
 				}
 			}
-			parsedStruct := parseStruct(structType)
+			parsedStruct := parseStruct(fset, structType)
 			parsedStruct.Name = structName
-			if len(comments) != 0 {
-				parsedStruct.Comments = comments
-			}
+			parsedStruct.Comments = comments
 			parsedStructs = append(parsedStructs, *parsedStruct)
 		}
 	}
@@ -228,7 +215,7 @@ func parseFileStructs(fset *token.FileSet, f *ast.File) []Struct {
 	return parsedStructs
 }
 
-func parseStruct(s *ast.StructType) *Struct {
+func parseStruct(fset *token.FileSet, s *ast.StructType) *Struct {
 	parsedStruct := &Struct{}
 	if s.Fields.List != nil {
 		parsedStruct.Fields = make([]StructField, 0, len(s.Fields.List))
@@ -241,18 +228,8 @@ func parseStruct(s *ast.StructType) *Struct {
 				parsedField.Name += ", "
 			}
 		}
-		if field.Doc != nil && field.Doc.List != nil {
-			parsedField.Doc = make([]string, 0, len(field.Doc.List))
-			for _, doc := range field.Doc.List {
-				parsedField.Doc = append(parsedField.Doc, doc.Text)
-			}
-		}
-		if field.Comment != nil && field.Comment.List != nil {
-			parsedField.Comments = make([]string, 0, len(field.Comment.List))
-			for _, comment := range field.Comment.List {
-				parsedField.Comments = append(parsedField.Comments, comment.Text)
-			}
-		}
+		parsedField.Doc = parseComments(field.Doc)
+		parsedField.Comments = parseComments(field.Comment)
 		if field.Tag != nil {
 			raw := field.Tag.Value
 			parsedField.RawTag = raw
@@ -261,48 +238,39 @@ func parseStruct(s *ast.StructType) *Struct {
 				parsedField.Tag = reflect.StructTag(raw[1 : len(raw)-1])
 			}
 		}
-		parsedField.Type = formatTypeExpr(field.Type)
-		parsedField.StructType = parseEmbeddedStructType(field.Type)
+		parsedField.Type = formatTypeExpr(fset, field.Type)
+		parsedField.StructType = parseEmbeddedStructType(fset, field.Type)
 		parsedStruct.Fields = append(parsedStruct.Fields, parsedField)
 	}
 	return parsedStruct
 }
 
-func formatTypeExpr(expr ast.Expr) string {
-	switch V := expr.(type) {
-	default:
+func formatTypeExpr(fset *token.FileSet, expr ast.Expr) string {
+	var b bytes.Buffer
+	if err := printer.Fprint(&b, fset, expr); err != nil {
 		return "?"
-	case *ast.Ident:
-		return V.Name
-	case *ast.StarExpr:
-		return "*" + formatTypeExpr(V.X)
-	case *ast.ArrayType:
-		sz := ""
-		if V.Len != nil {
-			switch L := V.Len.(type) {
-			case *ast.BasicLit:
-				sz = L.Value
-			case *ast.Ident:
-				sz = L.Name
-			}
-		}
-		return "[" + sz + "]" + formatTypeExpr(V.Elt)
-	case *ast.MapType:
-		return "map[" + formatTypeExpr(V.Key) + "]" + formatTypeExpr(V.Value)
-	case *ast.SelectorExpr:
-		return formatTypeExpr(V.X) + "." + formatTypeExpr(V.Sel)
-	case *ast.StructType:
-		return "struct{...}"
 	}
+	return b.String()
 }
 
-func parseEmbeddedStructType(expr ast.Expr) *Struct {
+func parseEmbeddedStructType(fset *token.FileSet, expr ast.Expr) *Struct {
 	switch V := expr.(type) {
 	default:
 		return nil
 	case *ast.StructType:
-		return parseStruct(V)
+		return parseStruct(fset, V)
 	case *ast.StarExpr:
-		return parseEmbeddedStructType(V.X)
+		return parseEmbeddedStructType(fset, V.X)
 	}
+}
+
+func parseComments(g *ast.CommentGroup) []string {
+	if g == nil || g.List == nil {
+		return nil
+	}
+	comments := make([]string, len(g.List))
+	for i, comment := range g.List {
+		comments[i] = comment.Text
+	}
+	return comments
 }
